@@ -2,85 +2,120 @@
 
 namespace Dokumd\Markdown;
 
+use Dokumd\Utils\Console;
+use Dokumd\Utils\Constants;
+
+/**
+ * Class DocuwikiToMarkdownExtra
+ * Convert docuwiki syntax to markdown.
+ *
+ * KNOWN BUGS:
+ *  - inline code snippets have other inline transforms applied to the code
+ *    body. It needs to be multi-pass:
+ *      - find inline code and replace with a non-translating unique identifier
+ *      - apply other transforms
+ *      - replace unique identifiers with new markup.
+ *
+ * @package Dokumd\Markdown
+ * @author Mark Stephens
+ */
 class DocuwikiToMarkdownExtra
 {
     /**
-     * Convert docuwiki syntax to markdown
-     *
-     * Author: Mark Stephens
-     * License: BSD
+     * These rules are applied whereever inline styling is permitted
+     * @var array
      */
-
-    /*
-     * KNOWN BUGS:
-     *
-     * - inline code snippets have other inline transforms applied to the code
-     *   body. It needs to be multi-pass:
-     *   - find inline code and replace with a non-translating unique identifier
-     *   - apply other transforms
-     *   - replace unique identifiers with new markup.
-     */
-
-    // These rules are applied whereever inline styling is permitted
-    static $inlineRules = array(
+    static array $inlineRules = [
         // Headings
-        '/^= (.*) =$/' => array("rewrite" => '###### \1'),
-        '/^=([^=]*)=*$/' => array("rewrite" => '###### \1'),
-        '/^== (.*) ==$/' => array("rewrite" => '##### \1'),
-        '/^==([^=]*)=*$/' => array("rewrite" => '##### \1'),
-        '/^=== (.*) ===$/' => array("rewrite" => '#### \1'),
-        '/^===([^=]*)=*$/' => array("rewrite" => '#### \1'),
-        '/^==== (.*) ====$/' => array("rewrite" => '### \1'),
-        '/^====([^=]*)=*$/' => array("rewrite" => '### \1'),
-        '/^===== (.*) =====$/' => array("rewrite" => '## \1'),
-        '/^=====([^=]*)=*$/' => array("rewrite" => '## \1'),
-        '/^====== (.*) ======$/' => array("rewrite" => '# \1'),
-        '/^======([^=]*)=*$/' => array("rewrite" => '# \1'),
+        '/^= (.*) =$/' => ["rewrite" => '###### \1'],
+        '/^=([^=]*)=*$/' => ["rewrite" => '###### \1'],
+        '/^== (.*) ==$/' => ["rewrite" => '##### \1'],
+        '/^==([^=]*)=*$/' => ["rewrite" => '##### \1'],
+        '/^=== (.*) ===$/' => ["rewrite" => '#### \1'],
+        '/^===([^=]*)=*$/' => ["rewrite" => '#### \1'],
+        '/^==== (.*) ====$/' => ["rewrite" => '### \1'],
+        '/^====([^=]*)=*$/' => ["rewrite" => '### \1'],
+        '/^===== (.*) =====$/' => ["rewrite" => '## \1'],
+        '/^=====([^=]*)=*$/' => ["rewrite" => '## \1'],
+        '/^====== (.*) ======$/' => ["rewrite" => '# \1'],
+        '/^======([^=]*)=*$/' => ["rewrite" => '# \1'],
 
         // Link syntaxes, most specific first
-        '/\[\[.*?\|\{\{.*?\}\}\]\]/U' =>
-            array("notice" => "Link with image seen, not handled properly"),
-        '/\[\[.*?\#.*?\|.*?\]\]/U' => array("notice" => "Link with segment seen, not handled properly"),
-        '/\[\[.*?\>.*?\]\]/U' => array("notice" => "interwiki syntax seen, not handled properly"),
-        '/\[\[(.*)\]\]/U' => array("call" => "handleLink"),
+        '/\[\[.*?\|\{\{.*?\}\}\]\]/U' => ["notice" => "Link with image seen, not handled properly"],
+        '/\[\[.*?\#.*?\|.*?\]\]/U' => ["notice" => "Link with segment seen, not handled properly"],
+        '/\[\[.*?\>.*?\]\]/U' => ["notice" => "interwiki syntax seen, not handled properly"],
+        '/\[\[(.*)\]\]/U' => ["call" => "handleLink"],
 
         // Inline code.
-        '/\<code\>(.*)\<\/code\>/U' => array("rewrite" => '`\1`'),
-        '/\<code (.*)\>(.*)\<\/code\>/U' => array("rewrite" => '`\2`{\1}'),
+        '/\<code\>(.*)\<\/code\>/U' => ["rewrite" => '`\1`'],
+        /** @lang text */
+        '/\<code (.*)\>(.*)\<\/code\>/U' => ["rewrite" => '`\2`{\1}'],
 
         // Misc checks
-        '/^\d*\.\s/' => array("notice" => "Possible numbered list item that is not docuwiki format, not handled"),
-        '/^=+\s*.*$/' => array("notice" => "Line starts with an =. Possibly an untranslated heading. Check for = in the heading text"),
-        // <x@y.xom>						email
+        '/^\d*\.\s/' => ["notice" => "Possible numbered list item that is not docuwiki format, not handled"],
+        '/^=+\s*.*$/' => ["notice" => "Line starts with an =. Possibly an untranslated heading. Check for = in the heading text"],
+    ];
+    /**
+     * Contains the name of current input file being processed.
+     * @var string
+     */
+    protected string $fileName;
+    /**
+     * Contains the line number of the input file currently being processed.
+     * @var int
+     */
+    protected int $lineNumber;
 
-        // extra rules for liquibase wiki
-        // remove liquibase.org
-        //'/]\(http:\/\/liquibase\.org\/([^\)]*)\)/'	=>	array("rewrite" => '](\1)'),
 
-        // add .html and site template variables
-        //'/]\(([^\)]*)\)/'				=>	array("rewrite" => ']({{ site.url }}/{{ page.lang }}/\1.html)')
-    );
+    /**
+     * Used when parsing lists. Has one of three values:
+     *   ""           not processing a list.
+     *   "unordered"  processing items in an unordered list
+     *   "ordered"    processing items in an ordered list
+     * @var string
+     */
+    protected string $listItemType;
+    /**
+     * Counter for ordered lists.
+     * @var int
+     */
+    protected int $listItemCount;
+    /**
+     * @var string
+     */
+    protected static string $underline = "";
 
-    // Contains the name of current input file being processed.
-    var $fileName;
-
-    // Contains the line number of the input file currently being processed.
-    var $lineNumber;
-
-    // Used when parsing lists. Has one of three values:
-    // ""			not processing a list.
-    // "unordered"	processing items in an unordered list
-    // "ordered"	processing items in an ordered list
-    var $listItemType;
-
-    // Counter for ordered lists.
-    var $listItemCount;
-
-    static $underline = "";
-
-    public function convert($s)
+    /**
+     * Converts a docuwiki file in the input directory and called $filename, and re-created it in the output directory,
+     * translated to markdown extra.
+     * @param string $inputFile
+     * @param string|null $outputFile
+     * @param int $flags
+     * @return string
+     */
+    public function convertFile(string $inputFile, ?string $outputFile = null, int $flags = Constants::FILE_DEFAULTS): string
     {
-        $lines = $this->getLines($s);
+        Console::wl(' [>] "%s" => "%s"', $inputFile, $outputFile);
+        $this->fileName = $inputFile;
+        $contents = file_get_contents($inputFile);
+        $contents = $this->convert($contents);
+
+        if ($outputFile) {
+            if (file_put_contents($outputFile, $contents, $flags) === FALSE)
+                echo "Could not write file $outputFile\n";
+        }
+
+        return $contents;
+    }
+
+    /**
+     * Converts the given text buffer
+     * @param string $contents
+     * @return string
+     */
+    public function convert(string $contents): string
+    {
+        $lines = $this->getLines($contents);
 
         $output = "";
         $lineMode = "text";
@@ -126,10 +161,8 @@ class DocuwikiToMarkdownExtra
                 case "text":
                     $line = $this->convertInlineMarkup($line);
                     $line = $this->convertListItems($line);
-//                    $line = 'text: '. $line;
                     break;
                 case "code":
-//                    $line = 'code: ' . $line;
                     break;
                 case "table":
                     // Grab this line, break it up and add it to $table after
@@ -144,21 +177,14 @@ class DocuwikiToMarkdownExtra
             if ($lineMode != "table") $output .= $line . "\n";
         }
 
-        $cleanup = new MarkdownCleanup();
-
-        return $cleanup->process($output);
+        return (new MarkdownCleanup())->process($output);
     }
 
     /**
-     * @param string $line
+     * @param array $table
      * @return string
      */
-    protected function tabsToSpace(string $line): string
-    {
-        return str_replace("\t", '    ', $line);
-    }
-
-    function renderTable($table)
+    protected function renderTable(array $table): string
     {
         // get a very big underline
         if (!self::$underline) for ($i = 0; $i < 100; $i++) self::$underline .= "----------";
@@ -196,8 +222,12 @@ class DocuwikiToMarkdownExtra
         return $s;
     }
 
-    // Perform inline translations.
-    function convertInlineMarkup($line)
+    /**
+     * Perform inline translations.
+     * @param string $line
+     * @return mixed
+     */
+    protected function convertInlineMarkup(string $line)
     {
         // Apply regexp rules
         foreach (self::$inlineRules as $from => $to) {
@@ -212,11 +242,15 @@ class DocuwikiToMarkdownExtra
         return $line;
     }
 
-    // Handle transforming list items:
-    // __* text		[unordered list item] =>
-    // __-			[ordered list item] =>
-    // Doesn't handle nested lists, but will emit a notice.
-    function convertListItems($s)
+    /**
+     * Handle transforming list items:
+     * __* text        [unordered list item] =>
+     * __-            [ordered list item] =>
+     * Doesn't handle nested lists, but will emit a notice.
+     * @param string $s
+     * @return string
+     */
+    protected function convertListItems(string $s): string
     {
         if ($s == "") return $s;
 
@@ -254,29 +288,36 @@ class DocuwikiToMarkdownExtra
         return $s;
     }
 
-    // Called by a rule that match links with [[ ]]. $line is the line to munge.
-    // $matchArgs are passed from preg_match_all; there are always two entries
-    // and $matchArgs[0] is the source link including [[ and ]], and is what
-    // we can replace with a link.
-    //
-    // some variants:
-    // - [[http://doc.silverstripe.org/doku.php?id=contributing#reporting_security_issues|contributing guidelines]]
-    //   has a # fragment, but part of the URL, not ahead of the URL as specified in docuwiki
-    // - [[http://url|{{http://url/file.png}}]] (x1)
-    // - [[recipes:forms]]
-    // - [[recipes:forms|our form recipes]]
-    // - [[tutorial:3-forms#showing_the_poll_results|tutorial:3-forms: Showing the poll results]]
-    // - [[directory-structure#module_structure|directory structure guidelines]]
-    // - [[:themes:developing]]
-    // - [[GSoc:2007:i18n]]
-    // - [[:Requirements]]
-    // - [[#ComponentSet]]
-    // - [[ModelAdmin#searchable_fields]]
-    // - [[irc:our weekly core discussions on IRC]]
-    // - [[#documentation|documentation]]
-    // - [[community run third party websites]]
-    // - [[requirements#including_inside_template_files|Includes in Templates]]
-    function handleLink($line, $matchArgs)
+    /**
+     * Called by a rule that match links with [[ ]]. $line is the line to munge.
+     * $matchArgs are passed from preg_match_all; there are always two entries
+     * and $matchArgs[0] is the source link including [[ and ]], and is what
+     * we can replace with a link.
+     *
+     * some variants:
+     * - [[http://doc.silverstripe.org/doku.php?id=contributing#reporting_security_issues|contributing guidelines]]
+     * has a # fragment, but part of the URL, not ahead of the URL as specified in docuwiki
+     * - [[http://url|{{http://url/file.png}}]] (x1)
+     * - [[recipes:forms]]
+     * - [[recipes:forms|our form recipes]]
+     * - [[tutorial:3-forms#showing_the_poll_results|tutorial:3-forms: Showing the poll results]]
+     * - [[directory-structure#module_structure|directory structure guidelines]]
+     * - [[:themes:developing]]
+     * - [[GSoc:2007:i18n]]
+     * - [[:Requirements]]
+     * - [[#ComponentSet]]
+     * - [[ModelAdmin#searchable_fields]]
+     * - [[irc:our weekly core discussions on IRC]]
+     * - [[#documentation|documentation]]
+     * - [[community run third party websites]]
+     * - [[requirements#including_inside_template_files|Includes in Templates]]
+     *
+     * @param string $line
+     * @param array $matchArgs
+     * @return string
+     * @noinspection PhpUnused
+     */
+    protected function handleLink(string $line, array $matchArgs): string
     {
         foreach ($matchArgs[0] as $match) {
             $link = substr($match, 2, -2);
@@ -294,13 +335,18 @@ class DocuwikiToMarkdownExtra
         return $line;
     }
 
-    // Called by rules that match image references with {{ }}
-    // Specific cases that we handle are:
-    // - {{:file.png|:file.png}}
-    // - {{http://something/file.png}}
-    // - {{http://something/file.png|display}}
-    // - {{tutorial:file.png}}
-    function handleImage($line, $matchArgs)
+    /**
+     * Called by rules that match image references with {{ }}
+     * Specific cases that we handle are:
+     * - {{:file.png|:file.png}}
+     * - {{http://something/file.png}}
+     * - {{http://something/file.png|display}}
+     * - {{tutorial:file.png}}
+     * @param string $line
+     * @param array $matchArgs
+     * @noinspection PhpUnused
+     */
+    protected function handleImage(string $line, array $matchArgs)
     {
         foreach ($matchArgs[0] as $match) {
             $link = substr($match, 2, -2);
@@ -311,47 +357,56 @@ class DocuwikiToMarkdownExtra
 
             $line = str_replace($match, $replacement, $line);
         }
+
+        // Note: the original implementation seems to be incomplete.
     }
 
-    // Convert an internal docuwiki link, which is basically some combination
-    // of identifiers with ":" separators ("namespaces"), which are really
-    // folders. The input is any link. This only alters internal links.
-    function translateInternalLink($s)
+    /**
+     * Convert an internal docuwiki link, which is basically some combination
+     * of identifiers with ":" separators ("namespaces"), which are really
+     * folders. The input is any link. This only alters internal links.
+     *
+     * @param string $s
+     * @return string
+     */
+    protected function translateInternalLink(string $s): string
     {
         if (substr($s, 0, 5) == "http:" || substr($s, 0, 6) == "https") return $s;
         return str_replace(":", "/", $s);
     }
 
-    function notice($message)
+    /**
+     * Service method to print a notice.
+     * @param string $message
+     * @return void
+     */
+    protected function notice(string $message)
     {
-        echo "Notice: {$this->fileName} (line {$this->lineNumber}): $message\n";
+        Console::wl('Notice: %s (line %s): %s', $this->fileName, $this->lineNumber, $message);
     }
 
-    // Return an array of lines from s, ensuring we handle different end-of-line
-    // variations
-    function getLines($s)
+
+    /**
+     * Return an array of lines from s, ensuring we handle different end-of-line
+     * variations
+     * @param string $s
+     * @return string[]
+     */
+    protected function getLines(string $s): array
     {
         // Ensure that we only have a single \n at the end of each line.
-        $s = str_replace("\r\n", "\n", $s);
-        $s = str_replace("\r", "\n", $s);
-        return explode("\n", $s);
+        $s = str_replace(Constants::CRLF, Constants::LF, $s);
+        $s = str_replace(Constants::CR, Constants::LF, $s);
+
+        return explode(Constants::LF, $s);
     }
 
-    // Convert a docuwiki file in the input directory and called
-    // $filename, and re-created it in the output directory, translated
-    // to markdown extra.
-    function convertFile($inputFile, $outputFile = null, $flags = 0)
+    /**
+     * @param string $line
+     * @return string
+     */
+    protected function tabsToSpace(string $line): string
     {
-        echo "Converting $inputFile => $outputFile … \n";
-        $this->fileName = $inputFile;
-        $s = file_get_contents($inputFile);
-        $s = $this->convert($s);
-
-        if ($outputFile) {
-            if (file_put_contents($outputFile, $s, $flags) === FALSE)
-                echo "Could not write file {$outputFile}\n";
-        }
-
-        return $s;
+        return str_replace("\t", '    ', $line);
     }
 }

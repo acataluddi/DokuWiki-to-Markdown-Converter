@@ -16,6 +16,7 @@ class MarkdownCleanup
         return $this->relocateImages($content, $filepath);
     }
 
+    /** @noinspection PhpUnnecessaryLocalVariableInspection */
     public function process($content)
     {
         $content = $this->convertInlineHtml($content);
@@ -25,8 +26,6 @@ class MarkdownCleanup
         $content = $this->newlinesBeforeLists($content);
         $content = $this->convertApiLinks($content);
         $content = $this->convertEmphasis($content);
-        // TODO Fixed width messes up tables, breaks up links, etc.
-        // $content = $this->fixedWidth($content);
 
         return $content;
     }
@@ -39,7 +38,7 @@ class MarkdownCleanup
         foreach ($lines as $i => $line) {
             // TODO Don't convert HTML in headlines
             if (!preg_match('/^\t/', $line)) {
-                $lines[$i] = preg_replace('/[*\'`]*(<[^>]*?>)[*\'`]*/', '`$1`', $lines[$i]);
+                $lines[$i] = preg_replace('/[*\'`]*(<[^>]*?>)[*\'`]*/', '`$1`', $line);
             }
 
             $out[] = $lines[$i];
@@ -156,7 +155,7 @@ class MarkdownCleanup
         $lines = $this->getLines($content);
         foreach ($lines as $i => $line) {
             // Mandate space before tags to avoid converting protocol links
-            $lines[$i] = preg_replace('/\s\/\/(\S[^]]*?)\/\//', ' *$1*', $lines[$i]);
+            $lines[$i] = preg_replace('/\s\/\/(\S[^]]*?)\/\//', ' *$1*', $line);
             // Fix tags without space at start, but at file start
             $lines[$i] = preg_replace('/^\/\/([^\s][^]]*?)\/\//', '*$1*', $lines[$i]);
             $out[] = $lines[$i];
@@ -176,7 +175,7 @@ class MarkdownCleanup
         $out = [];
 
         $lines = $this->getLines($content);
-        foreach ($lines as $i => $line) {
+        foreach ($lines as $line) {
             preg_replace('/\[(\w*)]\(http:\/\/api\.silverstripe.org.*\)/', '`[api:$1]`', $line);
             $out[] = $line;
         }
@@ -195,7 +194,7 @@ class MarkdownCleanup
         $lines = $this->getLines($content);
         foreach ($lines as $i => $line) {
             if (preg_match($re, $line) && isset($lines[$i - 1]) && !empty($lines[$i - 1]) && !preg_match($re, $lines[$i - 1])) {
-                $lines[$i] = "\n" . $lines[$i];
+                $lines[$i] = "\n" . $line;
             }
 
             $out[] = $lines[$i];
@@ -213,7 +212,7 @@ class MarkdownCleanup
 
         $lines = $this->getLines($content);
         foreach ($lines as $i => $line) {
-            if (preg_match('/^#/', $lines[$i]) && isset($lines[$i + 1]) && !empty($lines[$i + 1])) {
+            if (preg_match('/^#/', $line) && isset($lines[$i + 1]) && !empty($lines[$i + 1])) {
                 $lines[$i + 1] = "\n" . $lines[$i + 1];
             }
 

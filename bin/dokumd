@@ -1,5 +1,5 @@
 #!/usr/bin/env php
 <?php
-use Dokumd\Converter;
+use Dokumd\Dokumd;
 include __DIR__ . '/../libs/autoload.php';
-Converter::run();
+Dokumd::main();

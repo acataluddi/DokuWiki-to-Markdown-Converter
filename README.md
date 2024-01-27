@@ -15,13 +15,14 @@ A tool written initially by [SilverStripe](https://github.com/mattclegg/silverst
 The script goes through all the Dokuwiki documents in the *source* folder one by one, even the ones nested inside other folders. It changes them into Markdown format and puts them neatly in the *destination* folder.
 
 ```bash
-dokumd source/ destination/
+dokumd source/ destination/ [header-file]
 ```
 
 Where:
 
 - `source/` is the folder containing the Dokuwiki documents.
 - `destination/` is the folder that will contain the converted Markdown files.
+- `header-file` Optional. If given, the contents of the given file are appendend to all the target Markdown scripts.
 
 
 
