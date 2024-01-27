@@ -1,6 +1,14 @@
-# DokuWiki to Markdown Converter
+
+
+# Dokumd - DokuWiki to Markdown Converter
+
+
 
 ## Introduction
+
+A tool originally written by SilverStripe
+
+
 
 Tools to convert the DokuWiki syntax to Markdown syntax.    
 Please note it has some specific Liquibase regular expressions in `scripts/Dokumd\Markdown\DocuwikiToMarkdownExtra.php`.

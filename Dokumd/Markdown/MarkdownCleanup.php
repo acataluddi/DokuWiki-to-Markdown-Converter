@@ -177,8 +177,8 @@ class MarkdownCleanup
 
         $lines = $this->getLines($content);
         foreach ($lines as $i => $line) {
-            preg_replace('/\[(\w*)\]\(http:\/\/api\.silverstripe.org.*\)/', '`[api:$1]`', $lines[$i]);
-            $out[] = $lines[$i];
+            preg_replace('/\[(\w*)]\(http:\/\/api\.silverstripe.org.*\)/', '`[api:$1]`', $line);
+            $out[] = $line;
         }
 
         return implode("\n", $out);
@@ -194,7 +194,7 @@ class MarkdownCleanup
 
         $lines = $this->getLines($content);
         foreach ($lines as $i => $line) {
-            if (preg_match($re, $lines[$i]) && isset($lines[$i - 1]) && !empty($lines[$i - 1]) && !preg_match($re, $lines[$i - 1])) {
+            if (preg_match($re, $line) && isset($lines[$i - 1]) && !empty($lines[$i - 1]) && !preg_match($re, $lines[$i - 1])) {
                 $lines[$i] = "\n" . $lines[$i];
             }
 
