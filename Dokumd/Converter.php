@@ -25,16 +25,16 @@ class Converter
      */
     public static function run()
     {
-        $args = @$_SERVER['argv'];
-        $inputDir = (isset($args[1])) ?
-            realpath($args[1]) :
+        global $argv;
+        $inputDir = (isset($argv[1])) ?
+            realpath($argv[1]) :
             realpath(__DIR__ . '/../input');
-        $outputDir = (isset($args[2])) ?
-            realpath($args[2]) :
+        $outputDir = (isset($argv[2])) ?
+            realpath($argv[2]) :
             realpath(__DIR__ . '/../output');
 
         echo "Output Path ", $outputDir, "\n";
-        $template = (isset($args[3])) ? file_get_contents(realpath($args[3])) : false;
+        $template = (isset($argv[3])) ? file_get_contents(realpath($argv[3])) : false;
 
 
         $converter = new DocuwikiToMarkdownExtra();
