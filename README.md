@@ -3,7 +3,7 @@
 ## Introduction
 
 Tools to convert the DokuWiki syntax to Markdown syntax.    
-Please note it has some specific Liquibase regular expressions in `scripts/DocuwikiToMarkdownExtra.php`.
+Please note it has some specific Liquibase regular expressions in `scripts/Dokumd\Markdown\DocuwikiToMarkdownExtra.php`.
 
 ## TODOS
 

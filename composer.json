@@ -1,0 +1,56 @@
+{
+  "name": "acataluddi/dokuwiki-to-markdown-converter",
+  "description": "Basic tool to convert DokuWiki documents to Markdown, refactored for PHP 7.4.",
+  "version": "0.1.0",
+  "keywords": [
+    ""
+  ],
+  "type": "tool",
+  "license": "BSD",
+  "authors": [
+    {
+      "name": "Matt Clegg",
+      "homepage": "https://github.com/mattclegg"
+    },
+    {
+      "name": "Ludo",
+      "homepage": "https://github.com/ludoza"
+    },
+    {
+      "name": "Peter Krejci",
+      "homepage": "https://github.com/peterkrejci"
+    },
+    {
+      "name": "Adriano Cataluddi",
+      "homepage": "https://github.com/acataluddi"
+    }
+  ],
+  "require": {
+    "php": "^7.4"
+  },
+  "require-dev": {
+  },
+  "config": {
+    "vendor-dir": "libs",
+    "bin-dir": "bin",
+    "preferred-install": {
+      "*": "dist"
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "Dokumd\\": "Dokumd"
+    },
+    "files": [
+    ]
+  },
+  "autoload-dev": {
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "scripts": {
+    "test": [
+      "phpunit --configuration phpunit.xml.dist"
+    ]
+  }
+}
