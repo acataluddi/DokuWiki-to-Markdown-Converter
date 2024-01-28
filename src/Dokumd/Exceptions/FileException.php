@@ -29,4 +29,11 @@ class FileException extends Exception
         parent::__construct($message, $code, $previous);
     }
 
+    /**
+     * @return string
+     */
+    public function getFilename(): string
+    {
+        return $this->filename;
+    }
 }
