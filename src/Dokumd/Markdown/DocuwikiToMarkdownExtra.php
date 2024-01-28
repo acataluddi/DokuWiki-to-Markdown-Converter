@@ -2,6 +2,7 @@
 
 namespace Dokumd\Markdown;
 
+use Dokumd\Exceptions\MarkdownDetectedException;
 use Dokumd\Utils\Console;
 use Dokumd\Utils\Constants;
 
@@ -65,8 +66,6 @@ class DocuwikiToMarkdownExtra
      * @var int
      */
     protected int $lineNumber;
-
-
     /**
      * Used when parsing lists. Has one of three values:
      *   ""           not processing a list.
@@ -83,7 +82,24 @@ class DocuwikiToMarkdownExtra
     /**
      * @var string
      */
-    protected static string $underline = "";
+    protected static string $underline = '';
+    /**
+     * If true, the conversion will trigger an exception if the Markdown code is found in the source file.
+     * @var bool
+     */
+    protected bool $markdownDetectionEnforced = false;
+    /**
+     * @var MarkdownDetector
+     */
+    protected MarkdownDetector $detector;
+
+    /**
+     * Class constructor
+     */
+    public function __construct()
+    {
+        $this->detector = new MarkdownDetector();
+    }
 
     /**
      * Converts a docuwiki file in the input directory and called $filename, and re-created it in the output directory,
@@ -92,6 +108,7 @@ class DocuwikiToMarkdownExtra
      * @param string|null $outputFile
      * @param int $flags
      * @return string
+     * @throws MarkdownDetectedException
      */
     public function convertFile(string $inputFile, ?string $outputFile = null, int $flags = Constants::FILE_DEFAULTS): string
     {
@@ -112,6 +129,7 @@ class DocuwikiToMarkdownExtra
      * Converts the given text buffer
      * @param string $contents
      * @return string
+     * @throws MarkdownDetectedException
      */
     public function convert(string $contents): string
     {
@@ -159,6 +177,8 @@ class DocuwikiToMarkdownExtra
             // perform mode-specific translations
             switch ($lineMode) {
                 case "text":
+                    if ($this->markdownDetectionEnforced && $this->detector->containsMarkdown($line))
+                        throw new MarkdownDetectedException($this->fileName, $this->lineNumber, sprintf('Line: %s', $line));
                     $line = $this->convertInlineMarkup($line);
                     $line = $this->convertListItems($line);
                     break;
@@ -193,6 +213,25 @@ class DocuwikiToMarkdownExtra
         $s = str_replace(Constants::CR, Constants::LF, $s);
 
         return explode(Constants::LF, $s);
+    }
+
+    /**
+     * If true, the conversion will trigger an exception if the Markdown code is found in the source file.
+     * @return bool
+     */
+    public function isMarkdownDetectionEnforced(): bool
+    {
+        return $this->markdownDetectionEnforced;
+    }
+
+    /**
+     * @param bool $enforced
+     * @return DocuwikiToMarkdownExtra
+     */
+    public function setMarkdownDetectionEnforced(bool $enforced): DocuwikiToMarkdownExtra
+    {
+        $this->markdownDetectionEnforced = $enforced;
+        return $this;
     }
 
     /**
