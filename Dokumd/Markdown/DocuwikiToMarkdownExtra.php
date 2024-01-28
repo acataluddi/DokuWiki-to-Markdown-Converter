@@ -95,7 +95,7 @@ class DocuwikiToMarkdownExtra
      */
     public function convertFile(string $inputFile, ?string $outputFile = null, int $flags = Constants::FILE_DEFAULTS): string
     {
-        Console::wl(' [>] "%s" => "%s"', $inputFile, $outputFile);
+        Console::wl(' [Converting] "%s"', $inputFile);
         $this->fileName = $inputFile;
         $contents = file_get_contents($inputFile);
         $contents = $this->convert($contents);
@@ -115,7 +115,7 @@ class DocuwikiToMarkdownExtra
      */
     public function convert(string $contents): string
     {
-        $lines = $this->getLines($contents);
+        $lines = self::getLines($contents);
 
         $output = "";
         $lineMode = "text";
@@ -178,6 +178,21 @@ class DocuwikiToMarkdownExtra
         }
 
         return (new MarkdownCleanup())->process($output);
+    }
+
+    /**
+     * Return an array of lines from s, ensuring we handle different end-of-line
+     * variations
+     * @param string $s
+     * @return string[]
+     */
+    public static function getLines(string $s): array
+    {
+        // Ensure that we only have a single \n at the end of each line.
+        $s = str_replace(Constants::CRLF, Constants::LF, $s);
+        $s = str_replace(Constants::CR, Constants::LF, $s);
+
+        return explode(Constants::LF, $s);
     }
 
     /**
@@ -383,22 +398,6 @@ class DocuwikiToMarkdownExtra
     protected function notice(string $message)
     {
         Console::wl('Notice: %s (line %s): %s', $this->fileName, $this->lineNumber, $message);
-    }
-
-
-    /**
-     * Return an array of lines from s, ensuring we handle different end-of-line
-     * variations
-     * @param string $s
-     * @return string[]
-     */
-    protected function getLines(string $s): array
-    {
-        // Ensure that we only have a single \n at the end of each line.
-        $s = str_replace(Constants::CRLF, Constants::LF, $s);
-        $s = str_replace(Constants::CR, Constants::LF, $s);
-
-        return explode(Constants::LF, $s);
     }
 
     /**

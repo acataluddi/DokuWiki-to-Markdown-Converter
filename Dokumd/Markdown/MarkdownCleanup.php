@@ -2,22 +2,32 @@
 
 namespace Dokumd\Markdown;
 
+use Dokumd\Utils\Constants;
+
 /**
+ * Class MarkdownCleanup
  * Fixes certain omissions from {@link DocuwikiToMarkdownExtra}.
- *
+ * @package Dokumd\Markdown
  * @author Ingo Schommer
  */
 class MarkdownCleanup
 {
-
-    public function processFile($filepath)
+    /**
+     * @param string $filepath
+     * @return string
+     */
+    public function processFile(string $filepath): string
     {
         $content = $this->process(file_get_contents($filepath));
         return $this->relocateImages($content, $filepath);
     }
 
-    /** @noinspection PhpUnnecessaryLocalVariableInspection */
-    public function process($content)
+    /**
+     * @param string $content
+     * @return string
+     * @noinspection PhpUnnecessaryLocalVariableInspection
+     */
+    public function process(string $content): string
     {
         $content = $this->convertInlineHtml($content);
         $content = $this->convertUnbalancedHeadlines($content);
@@ -30,11 +40,14 @@ class MarkdownCleanup
         return $content;
     }
 
-    protected function convertInlineHtml($content)
+    /**
+     * @param string $content
+     * @return string
+     */
+    protected function convertInlineHtml(string $content): string
     {
         $out = [];
-
-        $lines = $this->getLines($content);
+        $lines = DocuwikiToMarkdownExtra::getLines($content);
         foreach ($lines as $i => $line) {
             // TODO Don't convert HTML in headlines
             if (!preg_match('/^\t/', $line)) {
@@ -44,7 +57,7 @@ class MarkdownCleanup
             $out[] = $lines[$i];
         }
 
-        return implode("\n", $out);
+        return implode(Constants::LF, $out);
     }
 
     /**
@@ -59,8 +72,11 @@ class MarkdownCleanup
      *
      * Before: {{tutorial:home-first.png|My Title}}
      * After: ![My Title](home-first.png)
+     * @param string $content
+     * @param string $filepath
+     * @return string
      */
-    protected function relocateImages($content, $filepath)
+    protected function relocateImages(string $content, string $filepath): string
     {
         $origImgFolder = realpath('../master/cms/docs/en/reference/_images/media/');
         $targetImgFolder = dirname($filepath) . '/images/';
@@ -90,14 +106,12 @@ class MarkdownCleanup
                 $targetImgPath = $targetImgFolder . '/' . $filename;
                 $origImgPath = preg_replace('/\?.*/', '', $origImgPath); // remove querystrings from filename
 
-                // Unset title if its the same as the filename
+                // Unset title if it's the same as the filename
                 if ($title == $filename) $title = '';
 
                 // Copy the image file
                 if (file_exists($origImgPath)) {
                     copy($origImgPath, $targetImgPath);
-                    // shell_exec("git add $targetImgFolder");
-                    // shell_exec("git mv $origImgPath $targetImgPath");
                 } else {
                     echo sprintf('Original image not found: %s' . "\n", $origImgPath);
                 }
@@ -111,7 +125,6 @@ class MarkdownCleanup
                 sprintf('![%s](%s)', $title, $targetImgHref),
                 $content
             );
-
         }
 
         return $content;
@@ -119,8 +132,10 @@ class MarkdownCleanup
 
     /**
      * Convert "unbalanced" DokuWiki headlines (amount of equal signs at beginning and end not matching).
+     * @param string $content
+     * @return string
      */
-    protected function convertUnbalancedHeadlines($content)
+    protected function convertUnbalancedHeadlines(string $content): string
     {
         $out = [];
 
@@ -132,7 +147,7 @@ class MarkdownCleanup
             '/^=====([^=]*) [=\s]*/' => array("rewrite" => '## $1'),
             '/^======([^=]*) [=\s]*/' => array("rewrite" => '# $1'),
         );
-        $lines = $this->getLines($content);
+        $lines = DocuwikiToMarkdownExtra::getLines($content);
         foreach ($lines as $i => $line) {
             foreach ($inlineRules as $rule => $replace) {
                 $lines[$i] = preg_replace($rule, $replace['rewrite'], $lines[$i]);
@@ -140,91 +155,101 @@ class MarkdownCleanup
             $out[] = $lines[$i];
         }
 
-        return implode("\n", $out);
+        return implode(Constants::LF, $out);
     }
 
     /**
      * Replace emphasis in format "//emphasized//" to "*emphasized*", but avoid replacing it
      * withing links. E.g. "[http://bla.com](http://bla.com)" shouldn't match, either should
      * "Convert http:// to https://".
+     * @param string $content
+     * @return string
      */
-    protected function convertEmphasis($content)
+    protected function convertEmphasis(string $content):string
     {
         $out = [];
 
-        $lines = $this->getLines($content);
+        $lines = DocuwikiToMarkdownExtra::getLines($content);
         foreach ($lines as $i => $line) {
             // Mandate space before tags to avoid converting protocol links
             $lines[$i] = preg_replace('/\s\/\/(\S[^]]*?)\/\//', ' *$1*', $line);
             // Fix tags without space at start, but at file start
-            $lines[$i] = preg_replace('/^\/\/([^\s][^]]*?)\/\//', '*$1*', $lines[$i]);
+            $lines[$i] = preg_replace('/^\/\/(\S[^]]*?)\/\//', '*$1*', $lines[$i]);
             $out[] = $lines[$i];
         }
 
-        return implode("\n", $out);
+        return implode(Constants::LF, $out);
     }
 
     /**
      * Exchange any links to api.ss.org with a new pseudo format "[api:<classname>]".
      * Also wrap them in <pre> blocks.
      *
-     * Excludes composite structures with spaces etc, we can't be sure they're class names.
+     * Excludes composite structures with spaces etc., we can't be sure they're class names.
+     * @param string $content
+     * @return string
      */
-    protected function convertApiLinks($content)
+    protected function convertApiLinks(string $content):string
     {
         $out = [];
 
-        $lines = $this->getLines($content);
+        $lines = DocuwikiToMarkdownExtra::getLines($content);
         foreach ($lines as $line) {
             preg_replace('/\[(\w*)]\(http:\/\/api\.silverstripe.org.*\)/', '`[api:$1]`', $line);
             $out[] = $line;
         }
 
-        return implode("\n", $out);
+        return implode(Constants::LF, $out);
     }
 
     /**
      * Headlines should be followed by newlines in markdown, for easier readability.
+     * @param string $content
+     * @return string
      */
-    protected function newlinesBeforeLists($content)
+    protected function newlinesBeforeLists(string $content):string
     {
         $out = [];
         $re = '/^[\s\t]*\*/';
 
-        $lines = $this->getLines($content);
+        $lines = DocuwikiToMarkdownExtra::getLines($content);
         foreach ($lines as $i => $line) {
             if (preg_match($re, $line) && isset($lines[$i - 1]) && !empty($lines[$i - 1]) && !preg_match($re, $lines[$i - 1])) {
-                $lines[$i] = "\n" . $line;
+                $lines[$i] = Constants::LF . $line;
             }
 
             $out[] = $lines[$i];
         }
 
-        return implode("\n", $out);
+        return implode(Constants::LF, $out);
     }
 
     /**
      * Headlines should be followed by newlines in markdown, for easier readability.
+     * @param string $content
+     * @return string
      */
-    protected function newlinesAfterHeadlines($content)
+    protected function newlinesAfterHeadlines(string $content):string
     {
         $out = [];
 
-        $lines = $this->getLines($content);
+        $lines = DocuwikiToMarkdownExtra::getLines($content);
         foreach ($lines as $i => $line) {
             if (preg_match('/^#/', $line) && isset($lines[$i + 1]) && !empty($lines[$i + 1])) {
-                $lines[$i + 1] = "\n" . $lines[$i + 1];
+                $lines[$i + 1] = Constants::LF . $lines[$i + 1];
             }
 
             $out[] = $lines[$i];
         }
 
-        return implode("\n", $out);
+        return implode(Constants::LF, $out);
     }
 
     /**
      * Convert Markdown Extra style code blocks with triple tildes
      * into more standard tab-indented code blocks with CodeHilite convetions.
+     * @param string $content
+     * @return string
      */
     protected function convertCodeBlocks(string $content): string
     {
@@ -232,7 +257,7 @@ class MarkdownCleanup
         $linemode = 'text'; // 'text' or 'code'
         $extraPreNewline = false;
 
-        $lines = $this->getLines($content);
+        $lines = DocuwikiToMarkdownExtra::getLines($content);
         foreach ($lines as $i => $line) {
             if (preg_match('/^~~~(\s{(.*)})?/', $line, $matches)) {
                 // first line of code block
@@ -251,21 +276,12 @@ class MarkdownCleanup
                 }
             }
 
-            if ($extraPreNewline) $lines[$i] = "\n" . $lines[$i];
+            if ($extraPreNewline) $lines[$i] = Constants::LF . $lines[$i];
             $extraPreNewline = false;
 
             $out[] = $lines[$i];
         }
 
-        return implode("\n", $out);
+        return implode(Constants::LF, $out);
     }
-
-    protected function getLines($s)
-    {
-        // Ensure that we only have a single \n at the end of each line.
-        $s = str_replace("\r\n", "\n", $s);
-        $s = str_replace("\r", "\n", $s);
-        return explode("\n", $s);
-    }
-
 }

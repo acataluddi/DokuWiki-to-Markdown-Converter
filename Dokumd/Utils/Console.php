@@ -2,6 +2,13 @@
 
 namespace Dokumd\Utils;
 
+/**
+ * Class Console
+ * Services methods to output information in the console.
+ *
+ * @package Dokumd\Utils
+ * @author Adriano Cataluddi <acataluddi@gmail.com>
+ */
 class Console
 {
     /**

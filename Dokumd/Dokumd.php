@@ -2,10 +2,10 @@
 
 namespace Dokumd;
 
-use Dokumd\Exceptions\FileLoadException;
 use Dokumd\Markdown\DocuwikiToMarkdownExtra;
 use Dokumd\Utils\Console;
 use Dokumd\Utils\Constants;
+use Dokumd\Utils\FileUtils;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
@@ -46,7 +46,7 @@ class Dokumd
 
             $inputDir = $argv[1];
             $outputDir = $argv[2];
-            $template = (isset($argv[3])) ? $this->loadContents($argv[3]) : false;
+            $fileHeader = (isset($argv[3])) ? FileUtils::load($argv[3]) : false;
 
             foreach ([$inputDir, $outputDir] as $path) {
                 if (!is_dir($path))
@@ -74,6 +74,9 @@ class Dokumd
             }
 
             $converter = new DocuwikiToMarkdownExtra();
+
+            $convertedExt = array_flip(['md', 'txt']);
+            $copied = $converted = 0;
             foreach ($files as $file) {
                 $filename = $file->getFilename();
 
@@ -84,47 +87,40 @@ class Dokumd
                 if (is_dir($file->getPathname()))
                     continue;
 
-                if ($outputDir) {
-                    // Create output subfolder (optional)
-                    $outputDir = str_replace($path, substr($path, 0, -5) . 'output', $inputDir);
+                // Create output subfolder
+                $outputDir = str_replace($path, substr($path, 0, -5) . 'output', $inputDir);
 
-                    if (!file_exists($outputDir)) mkdir($outputDir, 0777, true);
-                    $outFilename = preg_replace('/\.txt$/', '.md', $filename);
-                    if ($template) {
-                        $flags = FILE_APPEND;
-                        Console::wl('Writing header in "%s/%s"', $outputDir, $outFilename);
-                        if (file_put_contents("$outputDir/$outFilename", $template) === FALSE)
-                            Console::wl('Could not write file "%s/%s"', $outputDir, $outFilename);
-                    } else {
-                        $flags = Constants::FILE_DEFAULTS;
-                    }
-                    $converter->convertFile("$inputDir/$filename", "$outputDir/$outFilename", $flags);
-                } else {
-                    echo $converter->convertFile("$inputDir/$filename");
+                if (!file_exists($outputDir)) mkdir($outputDir, 0777, true);
+                $outFilename = preg_replace('/\.txt$/', '.md', $filename);
+
+                // Only .md and .txt files are converted. The others are just copied as they are
+                if (!array_key_exists(strtolower($file->getExtension()), $convertedExt)) {
+                    Console::wl('    [Copying] "%s"', $file);
+                    FileUtils::copy("$inputDir/$filename", "$outputDir/$outFilename");
+                    $copied++;
+                    continue;
                 }
+
+                if ($fileHeader) {
+                    $flags = FILE_APPEND;
+                    Console::wl('Writing header in "%s/%s"', $outputDir, $outFilename);
+                    if (file_put_contents("$outputDir/$outFilename", $fileHeader) === FALSE)
+                        Console::wl('Could not write file "%s/%s"', $outputDir, $outFilename);
+                } else {
+                    $flags = Constants::FILE_DEFAULTS;
+                }
+
+                $converter->convertFile("$inputDir/$filename", "$outputDir/$outFilename", $flags);
+                $converted++;
             }
+
+            Console::wl('');
+            Console::wl('Completed. Converted: %s Copied: %s Total: %s', $converted, $copied, $converted + $copied);
         }
         catch (Throwable $e) {
             Console::wl('Critical: ' . $e->getMessage());
             exit(self::EXIT_FAILURE);
         }
-    }
-
-    /**
-     * @param string $file
-     * @return string
-     * @throws FileLoadException
-     */
-    protected function loadContents(string $file): string
-    {
-        if (!file_exists($file))
-            throw new FileLoadException($file);
-
-        $contents = file_get_contents($file);
-        if ($contents === false)
-            throw new FileLoadException($file);
-
-        return $contents;
     }
 
     /**
