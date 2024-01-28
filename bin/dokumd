@@ -1,0 +1,5 @@
+#!/usr/bin/env php
+<?php
+use Dokumd\Dokumd;
+include __DIR__ . '/../libs/autoload.php';
+Dokumd::main();

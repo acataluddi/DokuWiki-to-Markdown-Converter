@@ -1,0 +1,15 @@
+#!/bin/bash
+
+script_path=$(dirname -- "$(readlink -f -- "$0")")
+bin_name=dokumd
+dokumd_path="${script_path}/${bin_name}"
+symlink_path="${HOME}/bin/${bin_name}"
+
+echo "Installing \"${dokumd}\""
+echo "  \"${symlink_path}\" => \"${dokumd_path}\""
+
+if [ -f "${symlink_path}" ]; then
+  rm -f "${symlink_path}"
+fi
+
+ln -s "${dokumd_path}" "${symlink_path}"

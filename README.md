@@ -1,50 +1,36 @@
-# DokuWiki to Markdown Converter
+
+
+# Dokumd - DokuWiki to Markdown Converter
+
+
 
 ## Introduction
 
-Tools to convert the DokuWiki syntax to Markdown syntax.    
-Please note it has some specific Liquibase regular expressions in `scripts/DocuwikiToMarkdownExtra.php`.
-
-## TODOS
-
-### Fix the following conversion inconsistencies
-
-	<del> is replaced by `<del>`. It should re replaced by <strike> - without the `` wrap
-	\\ should be replaced by 4 spaces and a line break
-	Links should be encapsulated by <>
-	bullets (like * or -) should have no spaces in front of them, and only one after
+A tool written initially by [SilverStripe](https://github.com/mattclegg/silverstripe-doc-restructuring) with subsequent forks (see *Credits* below), which has been quickly refactored and improved a bit to migrate a legacy [Dokuwiki](https://www.dokuwiki.org/dokuwiki) wiki to [Outline](https://www.getoutline.com/).
 
 
 
+## Usage
 
-## Convert single files
+The script goes through all the Dokuwiki documents in the *source* folder one by one, even the ones nested inside other folders. It changes them into Markdown format and puts them neatly in the *destination* folder.
 
-Place a file in the input dir, and run:    
-`php convert.php input/myfile.txt`
+```bash
+dokumd source/ destination/ [header-file]
+```
 
-This will convert your file, and place a `myfile.md` next to your file.
+Where:
+
+- `source/` is the folder containing the Dokuwiki documents.
+- `destination/` is the folder that will contain the converted Markdown files.
+- `header-file` Optional. If given, the contents of the given file are appendend to all the target Markdown scripts.
 
 
-## Advanced usage (not yet tested)
 
+## Credits
 
-### Import an entire wiki
+This project was forked from the *SilverStripe documentation restructuring project*:
 
-	scp -P 2222 -r <username>@myserver:/sites/mysite/www/assets/data/pages/* input/
-
-### Convert to Markdown files
-
-	cd scripts
-	php Translate.php ../input <../output> < template.txt>
-
-`../output` - if output is not supplied it will print the conversion to `stdout`.
-
-`template.txt` - at the moment it only prepends the content of the template to each file it converts. 
-
-## Credit
-
-This project was forked from the [SilverStripe Documentation Restructuring Project](https://github.com/chillu/silverstripe-doc-restructuring) 
-and was edited to add some extra functionality by [ludoza](https://github.com/ludoza).    
-It has subsequently been forked from [ludoza's fork](https://github.com/ludoza/Liquibase-DokuWiki-to-Markdown-Converter) by [titledk](https://github.com/titledk) with the
-aim of creating a common way to export dokuwiki files to markdown (which is what we need in our 2013 restructuring here
-at title.dk).
+- Original developer: [Matt Clegg](https://github.com/mattclegg).
+- Forked by [Ludo](https://github.com/ludoza).
+- Forked by [Peter Krejci](https://github.com/peterkrejci).
+- Forked by [Adriano Cataluddi](https://github.com/acataluddi).
