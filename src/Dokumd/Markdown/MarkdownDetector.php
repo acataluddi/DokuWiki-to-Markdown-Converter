@@ -26,6 +26,12 @@ class MarkdownDetector
         foreach ($lines as $line) {
             if ($this->hasCodeBlock($line))
                 return true;
+
+            if ($this->hasInlineHeader($line))
+                return true;
+
+            if ($this->hasMultilineHeader($line))
+                return true;
         }
         return false;
     }
@@ -40,8 +46,31 @@ class MarkdownDetector
         return strpos($line, '```') !== false;
     }
 
-    protected function hasHeader(string $line): bool
+    /**
+     * @param string $line
+     * @return bool
+     */
+    protected function hasInlineHeader(string $line): bool
     {
-        return true;
+        $inlineHeaderPattern = '/^#+\s+.*/';
+        $count = preg_match($inlineHeaderPattern, $line);
+        if ($count === false)
+            return false;
+
+        return $count > 0;
+    }
+
+    /**
+     * @param string $line
+     * @return bool
+     */
+    protected function hasMultilineHeader(string $line): bool
+    {
+        $multilineHeaderPattern = '/^[=-]+$/m';
+        $count = preg_match($multilineHeaderPattern, $line);
+        if ($count === false)
+            return false;
+
+        return $count > 0;
     }
 }

@@ -125,7 +125,7 @@ class Dokumd
                 }
 
                 if ($detector->containsMarkdown($file)) {
-                    Console::wl('    [Copying] "%s" (Markdown detected)', $file);
+                    Console::wl('  [! Copying] "%s" (Markdown detected)', $file);
                     FileUtils::copy("$inputDir/$filename", "$outputDir/$outFilename");
                     $copied++;
                     continue;
