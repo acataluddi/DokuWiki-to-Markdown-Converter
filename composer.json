@@ -47,6 +47,9 @@
     ]
   },
   "autoload-dev": {
+    "classmap": [
+      "tests/Dokumd"
+    ]
   },
   "minimum-stability": "dev",
   "prefer-stable": true,

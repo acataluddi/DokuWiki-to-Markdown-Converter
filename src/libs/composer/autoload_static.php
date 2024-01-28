@@ -46,6 +46,8 @@ class ComposerStaticInit60bd92a4c6de479686a91a424976ced9
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'Dokumd\\Base\\AbstractTest' => __DIR__ . '/../../..' . '/tests/Dokumd/Base/AbstractTest.php',
+        'Dokumd\\Markdown\\MarkdownDetectorTest' => __DIR__ . '/../../..' . '/tests/Dokumd/Markdown/MarkdownDetectorTest.php',
         'PHPUnit\\Exception' => __DIR__ . '/..' . '/phpunit/phpunit/src/Exception.php',
         'PHPUnit\\Framework\\ActualValueIsNotAnObjectException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Exception/ActualValueIsNotAnObjectException.php',
         'PHPUnit\\Framework\\Assert' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert.php',
