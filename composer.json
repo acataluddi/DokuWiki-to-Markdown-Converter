@@ -43,6 +43,7 @@
       "Dokumd\\": "src/Dokumd"
     },
     "files": [
+      "src/Dokumd/version.php"
     ]
   },
   "autoload-dev": {

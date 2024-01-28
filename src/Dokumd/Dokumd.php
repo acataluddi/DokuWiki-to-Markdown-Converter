@@ -34,6 +34,24 @@ class Dokumd
     }
 
     /**
+     * Returns the tool version.
+     * @return string
+     */
+    public static function getVersion(): string
+    {
+        return DOKUMD_VERSION;
+    }
+
+    /**
+     * returns the tool name.
+     * @return string
+     */
+    public static function getName(): string
+    {
+        return 'Dockumd';
+    }
+
+    /**
      * @return void
      */
     public function run()
@@ -56,6 +74,9 @@ class Dokumd
 
             $inputDir = realpath($inputDir);
             $outputDir = realpath($outputDir);
+
+            Console::wl( '%s (version %s)', self::getName(), self::getVersion());
+            Console::wl();
 
             Console::wl('Processing files');
             Console::wl('--------------------------------------------------------------------------');
@@ -139,6 +160,7 @@ class Dokumd
     protected function showHelp()
     {
         $lines = [
+            sprintf('%s (version %s)', self::getName(), self::getVersion()),
             'Converts Dokuwiki pages to Markdown',
             '',
             'Usage:',
