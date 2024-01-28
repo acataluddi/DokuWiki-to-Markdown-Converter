@@ -29,17 +29,18 @@
     "php": "^7.4"
   },
   "require-dev": {
+    "phpunit/phpunit": "^9.0"
   },
   "config": {
-    "vendor-dir": "libs",
-    "bin-dir": "bin",
+    "vendor-dir": "src/libs",
+    "bin-dir": "src/bin",
     "preferred-install": {
       "*": "dist"
     }
   },
   "autoload": {
     "psr-4": {
-      "Dokumd\\": "Dokumd"
+      "Dokumd\\": "src/Dokumd"
     },
     "files": [
     ]
