@@ -1,2 +1,2 @@
 <?php
-const DOKUMD_VERSION = '0.1.1';
+const DOKUMD_VERSION = '0.1.2-dev';
