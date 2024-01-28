@@ -397,7 +397,7 @@ class DocuwikiToMarkdownExtra
      */
     protected function notice(string $message)
     {
-        Console::wl('Notice: %s (line %s): %s', $this->fileName, $this->lineNumber, $message);
+        Console::wl('      Notice: %s:%s. %s', basename($this->fileName), $this->lineNumber, $message);
     }
 
     /**
