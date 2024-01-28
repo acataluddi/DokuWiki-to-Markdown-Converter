@@ -3,6 +3,7 @@
 namespace Dokumd;
 
 use Dokumd\Markdown\DocuwikiToMarkdownExtra;
+use Dokumd\Markdown\MarkdownDetector;
 use Dokumd\Utils\Console;
 use Dokumd\Utils\Constants;
 use Dokumd\Utils\FileUtils;
@@ -77,6 +78,7 @@ class Dokumd
 
             $convertedExt = array_flip(['md', 'txt']);
             $copied = $converted = 0;
+            $detector = new MarkdownDetector();
             foreach ($files as $file) {
                 $filename = $file->getFilename();
 
@@ -96,6 +98,13 @@ class Dokumd
                 // Only .md and .txt files are converted. The others are just copied as they are
                 if (!array_key_exists(strtolower($file->getExtension()), $convertedExt)) {
                     Console::wl('    [Copying] "%s"', $file);
+                    FileUtils::copy("$inputDir/$filename", "$outputDir/$outFilename");
+                    $copied++;
+                    continue;
+                }
+
+                if ($detector->containsMarkdown($file)) {
+                    Console::wl('    [Copying] "%s" (Markdown detected)', $file);
                     FileUtils::copy("$inputDir/$filename", "$outputDir/$outFilename");
                     $copied++;
                     continue;
