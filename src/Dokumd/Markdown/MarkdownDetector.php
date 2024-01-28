@@ -20,9 +20,18 @@ class MarkdownDetector
      * @return bool
      * @throws FileLoadException
      */
-    public function containsMarkdown(string $file): bool
+    public function fileContainsMarkdown(string $file): bool
     {
-        $lines = DocuwikiToMarkdownExtra::getLines(FileUtils::load($file));
+        return $this->containsMarkdown(FileUtils::load($file));
+    }
+
+    /**
+     * @param string $contents
+     * @return bool
+     */
+    public function containsMarkdown(string $contents): bool
+    {
+        $lines = DocuwikiToMarkdownExtra::getLines($contents);
         foreach ($lines as $line) {
             if ($this->hasCodeBlock($line))
                 return true;

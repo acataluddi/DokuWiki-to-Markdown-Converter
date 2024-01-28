@@ -21,7 +21,7 @@ class MarkdownDetectorTest extends AbstractTest
                     $expectation = 'expected to contain' :
                     $expectation = 'expected NOT to contain';
 
-                $this->assertEquals($expectedMarkdown, $detector->containsMarkdown($file),
+                $this->assertEquals($expectedMarkdown, $detector->fileContainsMarkdown($file),
                     sprintf('File "%s" %s Markdown code.', $file, $expectation)
                 );
             }

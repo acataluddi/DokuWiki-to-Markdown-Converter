@@ -2,8 +2,8 @@
 
 namespace Dokumd;
 
+use Dokumd\Exceptions\MarkdownDetectedException;
 use Dokumd\Markdown\DocuwikiToMarkdownExtra;
-use Dokumd\Markdown\MarkdownDetector;
 use Dokumd\Utils\Console;
 use Dokumd\Utils\Constants;
 use Dokumd\Utils\FileUtils;
@@ -75,7 +75,7 @@ class Dokumd
             $inputDir = realpath($inputDir);
             $outputDir = realpath($outputDir);
 
-            Console::wl( '%s (version %s)', self::getName(), self::getVersion());
+            Console::wl('%s (version %s)', self::getName(), self::getVersion());
             Console::wl();
 
             Console::wl('Processing files');
@@ -95,11 +95,11 @@ class Dokumd
                 $files = [new SplFileInfo($inputDir)];
             }
 
-            $converter = new DocuwikiToMarkdownExtra();
+            $converter = (new DocuwikiToMarkdownExtra())
+                ->setMarkdownDetectionEnforced(true);
 
             $convertedExt = array_flip(['md', 'txt']);
             $copied = $converted = 0;
-            $detector = new MarkdownDetector();
             foreach ($files as $file) {
                 $filename = $file->getFilename();
 
@@ -124,13 +124,6 @@ class Dokumd
                     continue;
                 }
 
-                if ($detector->containsMarkdown($file)) {
-                    Console::wl('  [! Copying] "%s" (Markdown detected)', $file);
-                    FileUtils::copy("$inputDir/$filename", "$outputDir/$outFilename");
-                    $copied++;
-                    continue;
-                }
-
                 if ($fileHeader) {
                     $flags = FILE_APPEND;
                     Console::wl('Writing header in "%s/%s"', $outputDir, $outFilename);
@@ -140,8 +133,16 @@ class Dokumd
                     $flags = Constants::FILE_DEFAULTS;
                 }
 
-                $converter->convertFile("$inputDir/$filename", "$outputDir/$outFilename", $flags);
-                $converted++;
+                try {
+                    $converter->convertFile("$inputDir/$filename", "$outputDir/$outFilename", $flags);
+                    $converted++;
+                }
+                catch (MarkdownDetectedException $e) {
+                    Console::wl('  [! Copying] "%s" (Markdown detected at line %s)', $file, $e->getLine());
+                    FileUtils::copy("$inputDir/$filename", "$outputDir/$outFilename");
+                    $copied++;
+                    continue;
+                }
             }
 
             Console::wl('');
