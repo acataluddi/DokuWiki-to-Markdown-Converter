@@ -265,7 +265,7 @@ class MarkdownCleanup
                     $linemode = 'code';
 
                     // add code formatting bit
-                    $lines[$i] = (isset($matches[2])) ? "```" . $matches[2] : '';
+                    $lines[$i] = (isset($matches[2])) ? "```" . $matches[2] : '```';
 
                     // if previous line is not empty, add a newline
                     $extraPreNewline = (isset($lines[$i - 1]) && !empty($lines[$i - 1]));
